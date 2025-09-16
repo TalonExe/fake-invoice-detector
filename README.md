@@ -26,8 +26,8 @@ Follow these steps to set up the project on your local machine.
 First, clone this repository to your local machine:
 
 ```bash
-git clone <your-repository-url>
-cd <your-project-directory>
+git clone https://github.com/TalonExe/fake-invoice-detector.git
+cd fake-invoice-detector
 ```
 
 ### 2. Backend Setup (FastAPI & Poetry)
@@ -48,7 +48,7 @@ In a separate terminal, navigate to the frontend directory (e.g., frontend/) and
 
 ```bash
 # Navigate to the frontend directory
-cd frontend
+cd my-app
 
 # Install npm packages
 npm install
@@ -67,12 +67,11 @@ Make sure you are in the backend directory. Activate the virtual environment man
 cd backend
 
 # Run the uvicorn server
-poetry run uvicorn main:app --reload
+poetry add uvicorn fastapi
+
+# Run the uvicorn server
+poetry run main.py
 ```
-
-- main:app refers to the FastAPI application instance named app inside the main.py file. Adjust this if your file or instance is named differently.
-
-- The --reload flag enables hot reloading, so the server will restart automatically whenever you make changes to the code.
 
 The backend API should now be running, typically at http://127.0.0.1:8000. You can access the interactive API documentation at http://127.0.0.1:8000/docs.
 
