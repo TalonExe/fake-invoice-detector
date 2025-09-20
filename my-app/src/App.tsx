@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 // Type definitions
-interface ReceiptItem {
+interface InvoiceItem {
   id: number;
   description: string;
   quantity: number;
@@ -9,23 +9,23 @@ interface ReceiptItem {
   total: number;
 }
 
-interface ReceiptData {
+interface InvoiceData {
   id: string;
   merchant: string;
   date: string;
   total: number;
-  items: ReceiptItem[];
+  items: InvoiceItem[];
   isLegitimate?: boolean;
   confidence?: number;
   anomalies?: string[];
 }
 
-const AIReceiptDetector: React.FC = () => {
+const AIInvoiceDetector: React.FC = () => {
   // State management
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<ReceiptData | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<InvoiceData | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -92,7 +92,7 @@ const AIReceiptDetector: React.FC = () => {
   };
 
   // Simulate AI analysis
-  const analyzeReceipt = () => {
+  const analyzeInvoice = () => {
     if (!selectedFile) return;
     
     setIsAnalyzing(true);
@@ -102,7 +102,7 @@ const AIReceiptDetector: React.FC = () => {
     setTimeout(() => {
       // Mock analysis result
       const isLegitimate = Math.random() > 0.5;
-      const mockResult: ReceiptData = {
+      const mockResult: InvoiceData = {
         id: Math.random().toString(36).substring(2, 9).toUpperCase(),
         merchant: "Gourmet Grocery Store",
         date: new Date().toLocaleDateString(),
@@ -147,7 +147,7 @@ const AIReceiptDetector: React.FC = () => {
       {/* Header with dark mode toggle */}
       <header className="flex justify-between items-center mb-4">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
-          AI Receipt Detector
+          AI Invoice Detector
         </h1>
         <button
           onClick={toggleDarkMode}
@@ -173,11 +173,11 @@ const AIReceiptDetector: React.FC = () => {
             {/* Upload Section */}
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center">
-                Upload Receipt
+                Upload Invoice
               </h2>
               
               <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-                Upload a receipt to verify its authenticity using AI analysis
+                Upload a Invoice to verify its authenticity using AI analysis
               </p>
               
               <div 
@@ -238,7 +238,7 @@ const AIReceiptDetector: React.FC = () => {
                   <div className="border rounded-lg overflow-hidden max-w-xs dark:border-gray-600">
                     <img 
                       src={previewUrl} 
-                      alt="Receipt preview" 
+                      alt="Invoice preview" 
                       className="w-full h-auto object-contain"
                     />
                   </div>
@@ -247,7 +247,7 @@ const AIReceiptDetector: React.FC = () => {
 
               <div className="mt-6 flex justify-center">
                 <button
-                  onClick={analyzeReceipt}
+                  onClick={analyzeInvoice}
                   disabled={!selectedFile || isAnalyzing}
                   className={`px-6 py-3 rounded-lg font-medium text-white transition-colors ${
                     !selectedFile || isAnalyzing
@@ -264,7 +264,7 @@ const AIReceiptDetector: React.FC = () => {
                       Analyzing...
                     </span>
                   ) : (
-                    'Analyze Receipt'
+                    'Analyze Invoice'
                   )}
                 </button>
               </div>
@@ -293,7 +293,7 @@ const AIReceiptDetector: React.FC = () => {
                   </svg>
                   <div>
                     <span className="font-bold">
-                      {analysisResult.isLegitimate ? 'Legitimate Receipt' : 'Potential Fake Detected'}
+                      {analysisResult.isLegitimate ? 'Legitimate Invoice' : 'Potential Fake Detected'}
                     </span>
                     <p className="text-sm mt-1">
                       Confidence: {analysisResult.confidence?.toFixed(2)}%
@@ -318,13 +318,13 @@ const AIReceiptDetector: React.FC = () => {
                   </div>
                 )}
 
-                {/* Receipt Details */}
+                {/* Invoice Details */}
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="font-semibold text-gray-800 dark:text-gray-200">{analysisResult.merchant}</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">Date: {analysisResult.date}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Receipt ID: {analysisResult.id}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Invoice ID: {analysisResult.id}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
@@ -359,7 +359,7 @@ const AIReceiptDetector: React.FC = () => {
                     onClick={resetForm}
                     className="px-5 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                   >
-                    Analyze Another Receipt
+                    Analyze Another Invoice
                   </button>
                 </div>
               </div>
@@ -376,9 +376,9 @@ const AIReceiptDetector: React.FC = () => {
                 <div className="bg-blue-100 dark:bg-blue-900/30 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                   <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">1</span>
                 </div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Upload Receipt</h3>
+                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Upload Invoice</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Upload an image or PDF of your receipt for analysis
+                  Upload an image or PDF of your Invoice for analysis
                 </p>
               </div>
               <div className="text-center p-4">
@@ -396,7 +396,7 @@ const AIReceiptDetector: React.FC = () => {
                 </div>
                 <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Get Results</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Receive a detailed report on the receipt's legitimacy
+                  Receive a detailed report on the Invoice's legitimacy
                 </p>
               </div>
             </div>
@@ -407,4 +407,4 @@ const AIReceiptDetector: React.FC = () => {
   );
 };
 
-export default AIReceiptDetector;
+export default AIInvoiceDetector;
