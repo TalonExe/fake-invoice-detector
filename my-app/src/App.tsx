@@ -1,6 +1,7 @@
 import "./App.css";
 import { ModeToggle } from "./components/ui/mode-toggle";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 /* ---------------- Types ---------------- */
 type Result = {
@@ -150,6 +151,16 @@ export default function App() {
           <ModeToggle />
         </div>
       </header>
+
+    <header className="border-b border-zinc-200 dark:border-zinc-800">
+      <div className="max-w-6xl mx-auto px-8 py-5 flex items-center justify-between">
+        <h1 className="text-3xl font-extrabold tracking-tight">Fake Invoice Detector — Results</h1>
+        <div className="flex items-center gap-4">
+          <Link to="/upload" className="underline text-blue-600">Upload</Link>
+        <ModeToggle />
+        </div>
+      </div>
+    </header>
 
       <div className="max-w-6xl mx-auto px-8 py-8 grid grid-cols-[380px_1fr] gap-8">
         {/* LEFT: list */}
