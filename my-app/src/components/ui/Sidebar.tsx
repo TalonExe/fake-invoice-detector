@@ -42,6 +42,15 @@ export default function Sidebar({
           >
             View Individual Results
           </Link>
+                    <Link
+            to="/upload"
+            onClick={onClose}
+            className={`block rounded px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 ${
+              pathname.startsWith("/results") ? "bg-zinc-100 dark:bg-zinc-900" : ""
+            }`}
+          >
+            Text Extract
+          </Link>
         </nav>
       </aside>
     </>
