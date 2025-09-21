@@ -65,9 +65,11 @@ export default function ResultDetailPage() {
 
   if (!row) {
     return (
-      <div>
-        <p className="text-zinc-500">Receipt not found.</p>
-        <Link to="/results" className="underline text-blue-600">Back to Results</Link>
+       <div className="w-full flex justify-center">
+        <div className="max-w-3xl w-full px-4">
+          <p className="text-zinc-500">Receipt not found.</p>
+          <Link to="/results" className="underline text-blue-600">Back to Results</Link>
+        </div>
       </div>
     );
   }
@@ -76,11 +78,13 @@ export default function ResultDetailPage() {
   const toggleAccept = () => setRow(r => r ? { ...r, accepted: !r.accepted, flagged: false } : r);
 
   return (
-    <div className="w-full space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">Receipt {row.id}</h2>
-        <Link to="/results" className="underline text-blue-600">Back to Results</Link>
-      </div>
+   <div className="min-h-screen flex justify-center items-start">
+      <div className="w-full max-w-4xl space-y-6 mx-auto px-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">Receipt {row.id}</h2>
+          <Link to="/results" className="underline text-blue-600">Back to Results</Link>
+        </div>
+        </div>
 
       <section ref={ringRef} className="flex items-center gap-8">
         <Ring
