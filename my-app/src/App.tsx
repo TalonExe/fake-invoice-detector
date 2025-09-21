@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 // Type definitions
-interface InvoiceItem {
+interface ReceiptItem {
   id: number;
   description: string;
   quantity: number;
@@ -9,25 +9,37 @@ interface InvoiceItem {
   total: number;
 }
 
-interface InvoiceData {
+interface ReceiptData {
   id: string;
   merchant: string;
   date: string;
   total: number;
-  items: InvoiceItem[];
+  items: ReceiptItem[];
   isLegitimate?: boolean;
   confidence?: number;
   anomalies?: string[];
+  riskLevel?: 'low' | 'medium' | 'high';
 }
 
-const AIInvoiceDetector: React.FC = () => {
+interface AnalysisHistoryItem {
+  id: string;
+  timestamp: Date;
+  filename: string;
+  result: boolean;
+  confidence: number;
+}
+
+const AIReceiptDetector: React.FC = () => {
   // State management
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<InvoiceData | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<ReceiptData | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [analysisHistory, setAnalysisHistory] = useState<AnalysisHistoryItem[]>([]);
+  const [showTutorial, setShowTutorial] = useState(true);
+  const [activeTab, setActiveTab] = useState<'analyze' | 'history'>('analyze');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Toggle dark mode
@@ -43,6 +55,31 @@ const AIInvoiceDetector: React.FC = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  // Load analysis history from localStorage on component mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('receiptAnalysisHistory');
+    if (savedHistory) {
+      try {
+        const history = JSON.parse(savedHistory);
+        // Convert timestamp strings back to Date objects
+        const formattedHistory = history.map((item: any) => ({
+          ...item,
+          timestamp: new Date(item.timestamp)
+        }));
+        setAnalysisHistory(formattedHistory);
+      } catch (error) {
+        console.error('Failed to parse analysis history:', error);
+      }
+    }
+  }, []);
+
+  // Save analysis history to localStorage whenever it changes
+  useEffect(() => {
+    if (analysisHistory.length > 0) {
+      localStorage.setItem('receiptAnalysisHistory', JSON.stringify(analysisHistory));
+    }
+  }, [analysisHistory]);
 
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,7 +129,7 @@ const AIInvoiceDetector: React.FC = () => {
   };
 
   // Simulate AI analysis
-  const analyzeInvoice = () => {
+  const analyzeReceipt = () => {
     if (!selectedFile) return;
     
     setIsAnalyzing(true);
@@ -102,7 +139,13 @@ const AIInvoiceDetector: React.FC = () => {
     setTimeout(() => {
       // Mock analysis result
       const isLegitimate = Math.random() > 0.5;
-      const mockResult: InvoiceData = {
+      const confidence = Math.random() * 40 + 60; // Confidence between 60-100%
+      let riskLevel: 'low' | 'medium' | 'high' = 'low';
+      
+      if (confidence < 70) riskLevel = 'high';
+      else if (confidence < 85) riskLevel = 'medium';
+      
+      const mockResult: ReceiptData = {
         id: Math.random().toString(36).substring(2, 9).toUpperCase(),
         merchant: "Gourmet Grocery Store",
         date: new Date().toLocaleDateString(),
@@ -119,7 +162,8 @@ const AIInvoiceDetector: React.FC = () => {
           { id: 9, description: "Sales Tax", quantity: 1, price: 5.64, total: 5.64 },
         ],
         isLegitimate,
-        confidence: Math.random() * 40 + 60, // Confidence between 60-100%
+        confidence,
+        riskLevel,
         anomalies: isLegitimate ? [] : [
           "Inconsistent font usage",
           "Tax calculation doesn't match amount",
@@ -129,6 +173,17 @@ const AIInvoiceDetector: React.FC = () => {
       
       setAnalysisResult(mockResult);
       setIsAnalyzing(false);
+      
+      // Add to history
+      const historyItem: AnalysisHistoryItem = {
+        id: mockResult.id,
+        timestamp: new Date(),
+        filename: selectedFile.name,
+        result: isLegitimate,
+        confidence
+      };
+      
+      setAnalysisHistory(prev => [historyItem, ...prev.slice(0, 9)]); // Keep only last 10 items
     }, 2000);
   };
 
@@ -142,42 +197,101 @@ const AIInvoiceDetector: React.FC = () => {
     }
   };
 
+  // Format date for display
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
+
+  // Clear analysis history
+  const clearHistory = () => {
+    setAnalysisHistory([]);
+    localStorage.removeItem('receiptAnalysisHistory');
+  };
+
   return (
     <div className="w-screen h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8">
       {/* Header with dark mode toggle */}
       <header className="flex justify-between items-center mb-4">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
-          AI Invoice Detector
+          AI Receipt Detector
         </h1>
-        <button
-          onClick={toggleDarkMode}
-          className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
-          aria-label="Toggle dark mode"
-        >
-          {isDarkMode ? (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-            </svg>
-          ) : (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-            </svg>
-          )}
-        </button>
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setShowTutorial(!showTutorial)}
+            className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm"
+          >
+            {showTutorial ? 'Hide Tips' : 'Show Tips'}
+          </button>
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+            aria-label="Toggle dark mode"
+          >
+            {isDarkMode ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+              </svg>
+            )}
+          </button>
+        </div>
       </header>
 
-      {/* Main content - centered */}
-      <main className="flex-grow flex items-center justify-center">
-        <div className="w-full max-w-3xl mx-auto">
+      {/* Tutorial Section */}
+      {showTutorial && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+          <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-2 flex items-center">
+            <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Tips for Best Results
+          </h3>
+          <ul className="list-disc list-inside text-sm text-blue-700 dark:text-blue-300 space-y-1">
+            <li>Ensure the receipt is well-lit and all text is visible</li>
+            <li>Capture the entire receipt including merchant information</li>
+            <li>Verify that totals and tax amounts are clearly visible</li>
+            <li>Check for consistency in font styles and sizes</li>
+          </ul>
+        </div>
+      )}
+
+      {/* Tab Navigation */}
+      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+        <button
+          className={` py-2 px-4 font-medium text-sm ${activeTab === 'analyze' ? 'dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 text-black' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+          onClick={() => setActiveTab('analyze')}
+        >
+          Analyze Receipt
+        </button>
+        <button
+          className={`py-2 px-4 font-medium text-sm ${activeTab === 'history' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+          onClick={() => setActiveTab('history')}
+        >
+          History ({analysisHistory.length})
+        </button>
+      </div>
+
+      {/* Main content */}
+      <main className="flex-grow">
+        {activeTab === 'analyze' ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
             {/* Upload Section */}
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center">
-                Upload Invoice
+                Upload Receipt
               </h2>
               
               <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-                Upload a Invoice to verify its authenticity using AI analysis
+                Upload a receipt to verify its authenticity using AI analysis
               </p>
               
               <div 
@@ -238,7 +352,7 @@ const AIInvoiceDetector: React.FC = () => {
                   <div className="border rounded-lg overflow-hidden max-w-xs dark:border-gray-600">
                     <img 
                       src={previewUrl} 
-                      alt="Invoice preview" 
+                      alt="Receipt preview" 
                       className="w-full h-auto object-contain"
                     />
                   </div>
@@ -247,7 +361,7 @@ const AIInvoiceDetector: React.FC = () => {
 
               <div className="mt-6 flex justify-center">
                 <button
-                  onClick={analyzeInvoice}
+                  onClick={analyzeReceipt}
                   disabled={!selectedFile || isAnalyzing}
                   className={`px-6 py-3 rounded-lg font-medium text-white transition-colors ${
                     !selectedFile || isAnalyzing
@@ -264,7 +378,7 @@ const AIInvoiceDetector: React.FC = () => {
                       Analyzing...
                     </span>
                   ) : (
-                    'Analyze Invoice'
+                    'Analyze Receipt'
                   )}
                 </button>
               </div>
@@ -293,11 +407,23 @@ const AIInvoiceDetector: React.FC = () => {
                   </svg>
                   <div>
                     <span className="font-bold">
-                      {analysisResult.isLegitimate ? 'Legitimate Invoice' : 'Potential Fake Detected'}
+                      {analysisResult.isLegitimate ? 'Legitimate Receipt' : 'Potential Fake Detected'}
                     </span>
                     <p className="text-sm mt-1">
                       Confidence: {analysisResult.confidence?.toFixed(2)}%
                     </p>
+                    {analysisResult.riskLevel && (
+                      <p className="text-sm mt-1">
+                        Risk Level: 
+                        <span className={`font-bold ml-1 ${
+                          analysisResult.riskLevel === 'high' ? 'text-red-600 dark:text-red-400' :
+                          analysisResult.riskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
+                          'text-green-600 dark:text-green-400'
+                        }`}>
+                          {analysisResult.riskLevel.charAt(0).toUpperCase() + analysisResult.riskLevel.slice(1)}
+                        </span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -318,13 +444,13 @@ const AIInvoiceDetector: React.FC = () => {
                   </div>
                 )}
 
-                {/* Invoice Details */}
+                {/* Receipt Details */}
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="font-semibold text-gray-800 dark:text-gray-200">{analysisResult.merchant}</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">Date: {analysisResult.date}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Invoice ID: {analysisResult.id}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Receipt ID: {analysisResult.id}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
@@ -354,57 +480,129 @@ const AIInvoiceDetector: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-center">
+                <div className="flex justify-center space-x-4">
                   <button
                     onClick={resetForm}
                     className="px-5 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                   >
-                    Analyze Another Invoice
+                    Analyze Another Receipt
+                  </button>
+                  <button
+                    onClick={() => window.print()}
+                    className="px-5 py-2 bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                  >
+                    Print Report
                   </button>
                 </div>
               </div>
             )}
           </div>
-
-          {/* Info Section */}
-          <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center">
-              How It Works
+        ) : (
+          // History Tab
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden p-6">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
+              Analysis History
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4">
-                <div className="bg-blue-100 dark:bg-blue-900/30 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">1</span>
-                </div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Upload Invoice</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Upload an image or PDF of your Invoice for analysis
-                </p>
+            
+            {analysisHistory.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <svg className="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p className="mt-4">No analysis history yet.</p>
+                <button
+                  onClick={() => setActiveTab('analyze')}
+                  className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  Analyze a Receipt
+                </button>
               </div>
-              <div className="text-center p-4">
-                <div className="bg-blue-100 dark:bg-blue-900/30 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">2</span>
+            ) : (
+              <>
+                <div className="mb-4 flex justify-end">
+                  <button
+                    onClick={clearHistory}
+                    className="px-3 py-1 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors"
+                  >
+                    Clear History
+                  </button>
                 </div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">AI Analysis</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Our AI examines patterns, formatting, and content for authenticity
-                </p>
-              </div>
-              <div className="text-center p-4">
-                <div className="bg-blue-100 dark:bg-blue-900/30 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">3</span>
+                
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date & Time</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Filename</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Result</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Confidence</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {analysisHistory.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{formatDate(item.timestamp)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{item.filename}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.result ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>
+                              {item.result ? 'Legitimate' : 'Fake'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{item.confidence.toFixed(2)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Get Results</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Receive a detailed report on the Invoice's legitimacy
-                </p>
-              </div>
+              </>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* Info Section */}
+      <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center">
+          How It Works
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center p-4">
+            <div className="bg-blue-100 dark:bg-blue-900/30 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">1</span>
             </div>
+            <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Upload Receipt</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Upload an image or PDF of your receipt for analysis
+            </p>
+          </div>
+          <div className="text-center p-4">
+            <div className="bg-blue-100 dark:bg-blue-900/30 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">2</span>
+            </div>
+            <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">AI Analysis</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Our AI examines patterns, formatting, and content for authenticity
+            </p>
+          </div>
+          <div className="text-center p-4">
+            <div className="bg-blue-100 dark:bg-blue-900/30 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">3</span>
+            </div>
+            <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Get Results</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Receive a detailed report on the receipt's legitimacy
+            </p>
           </div>
         </div>
-      </main>
+      </div>
+
+      {/* Footer */}
+      <footer className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p>AI Receipt Detector v1.2 • Using advanced machine learning to detect fraudulent receipts</p>
+        <p className="mt-2">© {new Date().getFullYear()} ReceiptGuard • <a href="#" className="text-blue-600 dark:text-blue-400 hover:underline">Privacy Policy</a></p>
+      </footer>
     </div>
   );
 };
 
-export default AIInvoiceDetector;
+export default AIReceiptDetector;
